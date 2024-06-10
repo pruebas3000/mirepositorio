@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta DNI</title>
+    <link rel="stylesheet" type="text/css" href="../static/estilo.css">
+
+    <link rel="icon" href="../static/iconoDNI.png" type="image/x-icon">
+    <header>
+        
+    </header>
+    <nav>
+        
+        <a href="/" class="enlace-logo">
+            <img src="../static/logo Grupo Auren.png" alt="Imagen" class="imagenlogo"></a>
+        </nav>
+    <div class="consultador">
+        <form method="post">
+        <label class="txtIngresar" for="dni">Ingresar DNI:</label>
+        <input type="text" id="dni" class="inputdni" name="dni" placeholder="Número de doc." 
+        pattern="[0-9]{8}" title="INGRESAR SOLO NÚMEROS" maxlength="8" required>
+        <button class="botonConsultar" type="submit">Buscar</button>
+    </form>
+    
+</div>
+    <hr>
+    {% if resultado %}
+    <div class="contenedor-tabla">
+    <table>
+        <tr>
+            <td><strong>DNI:</strong> {{ resultado.numeroDocumento }}</td>
+        </tr>
+        <tr>
+            <td><strong>Nombres:</strong> {{ resultado.nombres }}</td>
+        </tr>
+        <tr>
+            <td><strong>Apellido Paterno:</strong> {{ resultado.apellidoPaterno }}</td>
+        </tr>
+        <tr>
+            <td><strong>Apellido Materno:</strong> {{ resultado.apellidoMaterno }}</td>
+        </tr>
+        <tr>
+            <td><strong>Nombre Completo:</strong> 
+            <span id="nombreCom">{{ resultado.nombres }} {{ resultado.apellidoPaterno }} {{ resultado.apellidoMaterno }}</span>
+              
+        </td>
+        </tr>
+        <tr>
+            <td><button class="copy-btn" onclick="copiarAlPortapapeles()">Copiar Nombre</button>
+                <button class="Aa" onclick="toggleCase()">Aa</button>
+                 </td>
+        </tr>
+    </table>
+</div>
+    {% endif %}
+    <div id="botones">
+        
+      
+  
+  <button onclick="generarCorreo()">Generar correo</button>
+  <table class="tablaresultadoc"><tr><td id="resultadoArticulo" style="display: none; height: 95px;">
+    </td></tr>
+</table>
+    <button id="botonCopiar" onclick="copiarResultado()">Copiar Accesos </button>
+    
+    
+
+    </div>
+    <a class="botonlimpiar" href="/">
+        <img src="../static/limpiar1.png" alt="Icono Limpiar"></a>
+  </div>
+  {% for mensaje in mensajes %}
+  <p class="mensajep">{{ mensaje }}</p>
+{% endfor %}
+
+
+<form action="/ejecutar-script" method="post">
+    <button type="submit">Ejecutar Script</button>
+</form>
+
+<footer>
+<a href="https://grupoauren.pe:2083/logout?" target="_blank">
+    <img src="../static/CPANEL.png" alt="Imagen" class="logocpanel"></a>
+</footer>
+
+
+
+    <script>
+    document.getElementById('dni').addEventListener('input', function() {
+        var dniInput = this.value.trim();
+        var btnBuscar = document.getElementById('btnBuscar');
+        
+        if (dniInput === '') {
+            btnBuscar.disabled = true;
+        } else {
+            btnBuscar.disabled = false;
+        }
+    }); 
+
+
+     function copiarAlPortapapeles() {
+            var texto = document.getElementById('nombreCom').innerText;
+            var entradaTemporal = document.createElement('textarea');
+            entradaTemporal.value = texto;
+            document.body.appendChild(entradaTemporal);
+            entradaTemporal.select();
+            document.execCommand('copy');
+            document.body.removeChild(entradaTemporal);
+        }   
+
+        function generarCorreo() {
+        var nombres = "{{ resultado.nombres }}";
+        var apellidoPaterno = "{{ resultado.apellidoPaterno }}";
+        var nroDocumento= "{{ resultado.numeroDocumento }}"
+        var numeroDocumento = document.getElementById("dni").textContent;
+
+        nombres = nombres.replace(/Ñ/g, "N");
+        apellidoPaterno = apellidoPaterno.replace(/Ñ/g, "N");
+
+        var primerNombre = nombres.split(' ')[0];
+        var correo = primerNombre.toLowerCase() + '.' + apellidoPaterno.toLowerCase() + '@grupoauren.pe';
+
+        validarCorreo(correo);
+        // Si el correo no existe, continúa generándolo
+        var primeraLetraPrimerNombre = primerNombre.charAt(0).toUpperCase();
+        var contrasena = primeraLetraPrimerNombre + apellidoPaterno.toUpperCase() + nroDocumento;
+
+        var resultadoHTML = '<span style="font-family: Arial; margin-bottom:10px; padding-top: 15px; display:block; font-weight: bold; color: black; font-size: 13px;">Accesos solicitados:</span>' + 
+        '<span style="font-family: Arial; color: black; font-size: 13px;">Correo corporativo:</span> <span style="font-family: Arial; color: black; font-size: 13px;">' + 
+        correo + '</span><br><span style="font-family: Arial; color: black; font-size: 13px;">Contraseña:</span> ' + '<span style="font-family: Arial; color: black; font-size: 13px;">' +contrasena ;
+
+        var resultadoArticulo = document.getElementById('resultadoArticulo');
+        resultadoArticulo.innerHTML = resultadoHTML;
+        resultadoArticulo.style.display = 'block';
+        }   
+        function validarCorreo(correo) {
+        // Realizar una solicitud AJAX al servidor Flask
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            var response = JSON.parse(xhr.responseText);
+            if (response.valido) {
+                console.log("El correo es válido.");
+            } else {
+                console.log("El correo no es válido.");
+            }
+        }
+     }
+    };
+   
+        function copiarResultado() {
+            var texto = document.getElementById('resultadoArticulo').innerText;
+            var entradaTemporal = document.createElement('textarea');
+            entradaTemporal.value = texto;
+            document.body.appendChild(entradaTemporal);
+            entradaTemporal.select();
+            document.execCommand('copy');
+            document.body.removeChild(entradaTemporal);
+        }   
+
+        document.getElementById('formulario').addEventListener('submit', function(event) {
+        var dniInput = document.getElementById('dni');
+        dniInput.value = dniInput.value.replace(/\s/g, ''); // Elimina los espacios en blanco
+    });
+
+        function toggleCase() {
+    var spanElement = document.getElementById("nombreCom");
+    var texto = spanElement.textContent;
+
+    // Verificar si el texto está en mayúsculas o minúsculas y convertirlo
+    if (texto === texto.toUpperCase()) {
+        spanElement.textContent = capitalizeFirstLetter(texto.toLowerCase());
+    } else {
+        spanElement.textContent = texto.toUpperCase(); // Convertir a mayúsculas
+    }
+}
+
+function capitalizeFirstLetter(string) {
+    return string.toLowerCase().replace(/\b\w/g, function(match) {
+        return match.toUpperCase();
+    });
+}
+
+    </script>
+</body>
+</html>
